@@ -83,7 +83,7 @@
 
 					Objective:
 					```bash
-					cat corpus/* | python3 -m yoga.cli
+					echo "i don't know why you say goodbye i say hello" | python3 -m yoga.cli
 					```
 
 					[Before](https://asciinema.org/a/VrBm6OMRn049hXVS9uBJUI58V) | [After](https://asciinema.org/a/kO8rh2IMXjlPAII5vUhoHXx4s)
@@ -112,6 +112,66 @@
 						with args.infile as ifp:
 							document = ifp.read()
 							print(json.dumps(index_document(document)))
+					```
+				</section>
+				<section id="cli-3" data-markdown style="text-align: left; font-size: 75%;">
+					### [Subcommands](https://docs.python.org/3.8/library/argparse.html#sub-commands)
+
+					Objective:
+					```bash
+					# Index the words in a single document
+					python3 -m yoga.cli index
+					# Count the words in an index
+					python3 -m yoga.cli count
+					```
+
+					[Video](https://asciinema.org/a/8gThOiYg2eqixt50dk7EtHYP7)
+
+					[cli.py](yoga/cli.py):
+					```python
+					from .index import index_document
+
+					def add_common_args(parser):
+						parser.add_argument(
+							'infile',
+							type=argparse.FileType(mode='r'),
+							nargs='?',
+							default=sys.stdin,
+							metavar='<input file>',
+							help='Input file (default: stdin)',
+						)
+
+					if __name__ == '__main__':
+						parser = argparse.ArgumentParser(description='yoga: Index documents and corpora')
+						subcommands = parser.add_subparsers()
+
+						index_parser = subcommands.add_parser('index', description='Index a document')
+						add_common_args(index_parser)
+
+						def index_handler(args):
+							with args.infile as ifp:
+								document = ifp.read()
+								print(json.dumps(index_document(document)))
+
+						index_parser.set_defaults(func=index_handler)
+
+						count_parser = subcommands.add_parser(
+							'count',
+							description='Count word occurrences in a document',
+						)
+						add_common_args(count_parser)
+
+						def count_handler(args):
+							with args.infile as ifp:
+								document = ifp.read()
+								index = index_document(document)
+								counts = {key:len(value) for key, value in index.items()}
+								print(json.dumps(counts))
+
+						count_parser.set_defaults(func=count_handler)
+
+						args = parser.parse_args()
+						args.func(args)
 					```
 				</section>
 			</div>
