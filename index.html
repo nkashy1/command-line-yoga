@@ -30,12 +30,51 @@
 					<p>Neeraj Kashyap</p>
 					<p style="font-size:50%;"><a href="https://github.com/nkashy1">github.com/nkashy1</a>, <a href="https://twitter.com/zomglings">@zomglings</a></p>
 				</section>
-				<section id="python-function" data-markdown>
+				<section id="index-document" data-markdown style="text-align: left; font-size: 75%;">
 					### Starting point
 
+					[index.py](yoga/index.py):
 					```python
-					def lol():
-						return "lol"
+					def index_document(document: str) -> Dict[str, List[int]]:
+						"""
+						Build an index of words in a single document
+						"""
+						words = document.split()
+						word_index: Dict[str, List[int]] = {}
+						for i, raw_word in enumerate(words):
+							word = raw_word.lower()
+							if word_index.get(word) is None:
+								word_index[word] = []
+							word_index[word].append(i)
+
+						return word_index
+					```
+				</section>
+				<section id="cli-1" data-markdown style="text-align: left; font-size: 75%;">
+					### Simple CLI
+
+					[Video](https://asciinema.org/a/ZvlM8ZaDsD3fZFnfrtVxalkEN)
+
+					[cli.py](yoga/cli.py):
+					```python
+					from .index import index_document
+
+					if __name__ == '__main__':
+						import argparse
+
+						parser = argparse.ArgumentParser('yoga: Index documents and corpora')
+						parser.add_argument(
+							'infile',
+							type=argparse.FileType(mode='r'),
+							metavar='<input file>',
+							help='Input file (default: stdin)',
+						)
+
+						args = parser.parse_args()
+
+						with args.infile as ifp:
+							document = ifp.read()
+							print(index_document(document))
 					```
 				</section>
 			</div>
