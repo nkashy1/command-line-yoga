@@ -1,5 +1,4 @@
 # command-line-yoga
-Command line yoga - presentation
 
 To view the presentation:
 
