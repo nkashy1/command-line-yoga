@@ -174,6 +174,193 @@
 						args.func(args)
 					```
 				</section>
+				<section id="cli-4" data-markdown style="text-align: left; font-size: 75%;">
+					### Flags
+
+					Objective:
+					```bash
+					python3 -m yoga.cli count --index [--sort]
+					```
+
+					[Video](https://asciinema.org/a/nWBoq3J7Zv0UKjeR3aVKRSxdw)
+
+					[cli.py](yoga/cli.py):
+					```python
+					count_parser = subcommands.add_parser(
+						'count',
+						description='Count word occurrences in a document',
+					)
+					add_common_args(count_parser)
+					count_parser.add_argument(
+						'--index',
+						action='store_true',
+						help='If set, expects the input file to be a precomputed index (in JSON format)',
+					)
+					count_parser.add_argument(
+						'--sort',
+						'-s',
+						action='store_true',
+						help='If set, sorts words by frequency in output',
+					)
+
+					def count_handler(args):
+						with args.infile as ifp:
+							if args.index:
+								index = json.load(ifp)
+							else:
+								document = ifp.read()
+								index = index_document(document)
+
+							freqs = [(key, len(value)) for key, value in index.items()]
+							if args.sort:
+								freqs.sort(key=lambda item: item[1], reverse=True)
+
+							for key, value in freqs:
+								print(f'{key} {value}')
+
+					count_parser.set_defaults(func=count_handler)
+					```
+				</section>
+				<section id="cli-5" data-markdown style="text-align: left; font-size: 75%;">
+					### Respecting pipes
+
+					Objective:
+					```bash
+					Traceback (most recent call last):
+					File "/usr/local/lib/python3.7/runpy.py", line 193, in _run_module_as_main
+						"__main__", mod_spec)
+					File "/usr/local/lib/python3.7/runpy.py", line 85, in _run_code
+						exec(code, run_globals)
+					File "/home/nkashyap/presentations/command-line-yoga/yoga/cli.py", line 70, in <module>
+						args.func(args)
+					File "/home/nkashyap/presentations/command-line-yoga/yoga/cli.py", line 65, in count_handler
+						print(f'{key} {value}')
+					BrokenPipeError: [Errno 32] Broken pipe
+					```
+
+					[Video](https://asciinema.org/a/jUfITusNttidBgUdtfCG8uznN)
+
+					[cli.py](yoga/cli.py):
+					```python
+					def count_handler(args):
+						with args.infile as ifp, sys.stderr:
+							if args.index:
+								index = json.load(ifp)
+							else:
+								document = ifp.read()
+								index = index_document(document)
+
+							freqs = [(key, len(value)) for key, value in index.items()]
+							if args.sort:
+								freqs.sort(key=lambda item: item[1], reverse=True)
+
+							for key, value in freqs:
+								try:
+									print(f'{key} {value}')
+								except BrokenPipeError:
+									break
+					```
+				</section>
+				<section id="cli-6" data-markdown style="text-align: left; font-size: 75%;">
+					### [Argument types](https://docs.python.org/3/library/argparse.html#type)
+
+					Objective:
+					```bash
+					python3 -m yoga.cli count --sort --gt 500 --lt 1000
+					```
+
+					[Video](https://asciinema.org/a/zKd1veBAASQPHJTDl6yHZI6p3)
+
+					[cli.py](yoga/cli.py):
+					```python
+					count_parser = subcommands.add_parser(
+						'count',
+						description='Count word occurrences in a document',
+					)
+					add_common_args(count_parser)
+					count_parser.add_argument(
+						'--index',
+						action='store_true',
+						help='If set, expects the input file to be a precomputed index (in JSON format)',
+					)
+					count_parser.add_argument(
+						'--sort',
+						'-s',
+						action='store_true',
+						help='If set, sorts words by frequency in output',
+					)
+					count_parser.add_argument(
+						'--gt',
+						type=int,
+						help='(Optional) Only use words that occur more than this many times',
+					)
+					count_parser.add_argument(
+						'--lt',
+						type=int,
+						help='(Optional) Only use words that occur less than this many times',
+					)
+
+					def count_handler(args):
+						with args.infile as ifp, sys.stderr:
+							if args.index:
+								index = json.load(ifp)
+							else:
+								document = ifp.read()
+								index = index_document(document)
+
+							freqs = [(key, len(value)) for key, value in index.items()]
+							if args.lt is not None:
+								freqs = [item for item in freqs if item[1] < args.lt]
+							if args.gt is not None:
+								freqs = [item for item in freqs if item[1] > args.gt]
+							if args.sort:
+								freqs.sort(key=lambda item: item[1], reverse=True)
+
+							for key, value in freqs:
+								try:
+									print(f'{key} {value}')
+								except BrokenPipeError:
+									break
+
+					count_parser.set_defaults(func=count_handler)
+					```
+				</section>
+				<section id="cli-7" data-markdown style="text-align: left; font-size: 75%;">
+					### vars
+
+					You can turn an `argparse.Namespace` object (`args`) into a dictionary using:
+					```python
+					args = parser.parse_args()
+					args_dict = vars(args)
+					```
+				</section>
+				<section id="cli-8" data-markdown style="text-align: left; font-size: 75%;">
+					### Custom type validation
+					`nonnegative_int` instead of `int`:
+					```python
+					...
+
+					def nonnegative_int(raw_value):
+						value = int(raw_value)
+						if value < 0:
+							raise ValueError(f'Expected non-negative integer, got {value}')
+
+					...
+
+					parser.add_argument(
+						'--lt',
+						type=nonnegative_int,
+						help='...',
+					)
+
+					...
+					```
+				</section>
+				<section id="final" data-markdown style="font-size: 75%;">
+					### Thank you!
+
+					Source: https://github.com/nkashy1/command-line-yoga
+				</section>
 			</div>
 		</div>
 
@@ -197,7 +384,7 @@
 				progress: true,
 				history: true,
 				navigationMode: "linear",
-				mouseWheel: true,
+				mouseWheel: false,
 				backgroundTransition: "slide",
 			});
 		</script>
